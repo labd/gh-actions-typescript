@@ -37,6 +37,10 @@ runs:
         restore-keys: |
           ${{ runner.os }}-pnpm-store-
 
+    - name: Audit dependencies for critical vulnerabilities
+      shell: bash
+      run: pnpm audit --audit-level=critical
+      
     - name: Install dependencies
       shell: bash
       run: pnpm install
