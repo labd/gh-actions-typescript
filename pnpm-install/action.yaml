@@ -39,7 +39,7 @@ runs:
 
     - name: Audit dependencies for critical vulnerabilities
       shell: bash
-      run: pnpm audit --audit-level=critical
+      run: pnpm audit --audit-level=critical --ignore-registry-errors
       
     - name: Install dependencies
       shell: bash
