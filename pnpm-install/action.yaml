@@ -25,6 +25,7 @@ runs:
       id: pnpm-install
       with:
         version: ${{ inputs.pnpm-version }}
+        package_json_file: ${{ inputs.cwd }}/package.json
         run_install: false
 
     - name: Get pnpm store directory
