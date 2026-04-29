@@ -8,6 +8,9 @@ inputs:
   pnpm-version:
     description: "pnpm version (optional)"
     required: false
+  cwd:
+    description: "Working directory for pnpm commands"
+    default: "."
 
 runs:
   using: "composite"
@@ -39,8 +42,10 @@ runs:
 
     - name: Audit dependencies for critical vulnerabilities
       shell: bash
+      working-directory: ${{ inputs.cwd }}
       run: pnpm audit --audit-level=critical --ignore-registry-errors
-      
+
     - name: Install dependencies
       shell: bash
+      working-directory: ${{ inputs.cwd }}
       run: pnpm install
