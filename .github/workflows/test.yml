@@ -1,0 +1,123 @@
+name: Test
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pnpm-install:
+    name: pnpm-install / node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22", "24", "26"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run pnpm-install
+        uses: ./pnpm-install
+        with:
+          cwd: test/fixture
+          node-version: ${{ matrix.node-version }}
+
+      - name: Verify
+        shell: bash
+        working-directory: test/fixture
+        env:
+          EXPECTED_NODE: ${{ matrix.node-version }}
+        run: |
+          set -euo pipefail
+          node --version | grep -q "^v${EXPECTED_NODE}\."
+          [ "$(pnpm --version)" = "12.15.0" ]
+          test -f node_modules/is-number/package.json
+
+  pnpm-install-defaults:
+    name: pnpm-install / defaults
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run pnpm-install
+        uses: ./pnpm-install
+        with:
+          cwd: test/fixture
+
+      - name: Verify
+        shell: bash
+        working-directory: test/fixture
+        run: |
+          set -euo pipefail
+          # node-version defaults to 24; .nvmrc is only used via node-version-file
+          node --version | grep -q '^v24\.'
+          test -f node_modules/is-number/package.json
+
+  pnpm-install-release:
+    name: pnpm-install / cache false, registry-url, node-version-file
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run pnpm-install
+        uses: ./pnpm-install
+        with:
+          cwd: test/fixture
+          cache: "false"
+          registry-url: https://registry.npmjs.org
+          node-version-file: test/fixture/.nvmrc
+          frozen-lockfile: "true"
+
+      - name: Verify
+        shell: bash
+        working-directory: test/fixture
+        run: |
+          set -euo pipefail
+          # test/fixture/.nvmrc pins Node 22
+          node --version | grep -q '^v22\.'
+          grep -q 'registry.npmjs.org' "$NPM_CONFIG_USERCONFIG"
+          test -f node_modules/is-number/package.json
+
+  pnpm-install-no-frozen-lockfile:
+    name: pnpm-install / frozen-lockfile false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run pnpm-install
+        uses: ./pnpm-install
+        with:
+          cwd: test/fixture
+          cache: "false"
+          frozen-lockfile: "false"
+
+      - name: Verify
+        shell: bash
+        working-directory: test/fixture
+        run: test -f node_modules/is-number/package.json
